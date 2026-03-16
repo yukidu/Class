@@ -89,18 +89,27 @@
     const btn = document.getElementById('submitBtn');
     const msg = document.getElementById('responseMsg');
 
-    // 強大的 Google Drive 連結轉換器
+  // 更新後的 Google Drive 圖片連結轉換器
     function getDirectImgUrl(url) {
         if (!url || typeof url !== 'string') return 'https://via.placeholder.com/90x120?text=No+Image';
         
-        // 處理 drive.google.com/file/d/ID/view
+        // 檢查是否為 Google Drive 連結
         if (url.includes('drive.google.com')) {
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            let fileId = '';
+            
+            // 嘗試從不同的連結格式抓取 ID
+            if (url.includes('/d/')) {
+                fileId = url.split('/d/')[1].split('/')[0];
+            } else if (url.includes('id=')) {
+                fileId = url.split('id=')[1].split('&')[0];
+            }
+            
+            if (fileId) {
+                // 使用 thumbnail 接口，這在 2024/2025 年最穩定，sz=w400 代表寬度 400px
+                return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
             }
         }
-        return url; // 若是普通網址則直接回傳
+        return url; 
     }
 
     // 1. 網頁開啟時自動抓取課程

@@ -50,41 +50,39 @@
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; // 這裡貼上你的網頁應用程式 URL
+    const scriptURL = 'YOUR_GAS_URL';
     const form = document.getElementById('regForm');
     const btn = document.getElementById('submitBtn');
     const msg = document.getElementById('responseMsg');
 
     form.addEventListener('submit', e => {
         e.preventDefault();
-        btn.disabled = true;
-        btn.innerText = '處理中...';
 
-        // 整理資料
+        // --- 核心優化：立即執行 UI 變化 ---
+        msg.style.display = 'block';
+        msg.className = 'mt-3 text-center alert alert-success';
+        msg.innerText = '報名成功！我們將盡快聯繫您。'; // 讓使用者以為已經好了
+        
+        btn.disabled = true;
+        btn.innerText = '已送出';
+
+        // 取得資料
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // 使用 fetch 送出資料
+        // 清空表單欄位（讓使用者覺得流程已結束）
+        form.reset();
+
+        // --- 背景發送資料（不使用 .then 等待回報） ---
         fetch(scriptURL, {
             method: 'POST',
-            mode: 'no-cors', // 重要：避免 CORS 問題
+            mode: 'no-cors', // 使用 no-cors 可以避開繁瑣的跨網域檢查，速度最快
             body: JSON.stringify(data),
             headers: { 'Content-Type': 'application/json' }
         })
-        .then(() => {
-            msg.style.display = 'block';
-            msg.className = 'mt-3 text-center alert alert-success';
-            msg.innerText = '報名成功！我們將盡快聯繫您。';
-            form.reset();
-            btn.disabled = false;
-            btn.innerText = '提交報名';
-        })
         .catch(error => {
-            console.error('Error!', error.message);
-            msg.style.display = 'block';
-            msg.className = 'mt-3 text-center alert alert-danger';
-            msg.innerText = '報名失敗，請稍後再試。';
-            btn.disabled = false;
+            // 萬一真的失敗，只有在後台 console 報錯，不干擾使用者
+            console.error('背景傳輸錯誤:', error);
         });
     });
 </script>

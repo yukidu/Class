@@ -3,58 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>課程報名系統 (複選版)</title>
+    <title>課程報名系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f7f6; padding: 20px 0; font-family: "Microsoft JhengHei", sans-serif; }
         .form-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 650px; margin: auto; }
         
-        /* 課程卡片容器 */
-        .course-card {
-            position: relative;
-            display: flex;
-            align-items: center;
-            border: 2px solid #eee;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: 0.2s;
-            background: #fff;
-            overflow: hidden;
-        }
-
-        /* 巨大勾勾遮罩 - 稍微降低透明度，讓 DM 還是隱約可見 */
-        .course-card .checkmark-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(74, 108, 247, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-        }
+        .course-card { position: relative; display: flex; align-items: center; border: 2px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; background: #fff; overflow: hidden; }
+        .course-card .checkmark-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 108, 247, 0.7); display: none; justify-content: center; align-items: center; z-index: 5; }
         .course-card.selected .checkmark-overlay { display: flex; }
-        .course-card .checkmark-overlay::after {
-            content: '✔';
-            color: white;
-            font-size: 100px; /* 巨大勾勾 */
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(0,0,0,0.3);
-        }
+        .course-card .checkmark-overlay::after { content: '✔'; color: white; font-size: 80px; font-weight: bold; }
 
         .course-img-wrapper { position: relative; text-align: center; margin-right: 15px; z-index: 2; }
-        .course-img { width: 100px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; display: block; }
+        .course-img { width: 100px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
         .btn-view-img { display: block; font-size: 11px; margin-top: 5px; color: #4a6cf7; text-decoration: none; font-weight: bold; }
         
-        .course-info { flex-grow: 1; z-index: 2; }
-        .course-name { font-weight: bold; font-size: 1.15rem; color: #333; }
-        .course-detail { font-size: 0.95rem; color: #666; }
-        .course-fee { color: #d9534f; font-weight: bold; }
-
         .form-label { font-weight: bold; margin-top: 15px; }
-        .form-control { background-color: #f0f4ff; border: none; border-radius: 10px; height: 45px; }
+        .form-control, .form-select { background-color: #f0f4ff; border: none; border-radius: 10px; height: 45px; }
         .btn-submit { background-color: #4a6cf7; border: none; padding: 15px; font-weight: bold; border-radius: 10px; margin-top: 30px; font-size: 1.2rem; }
+        
+        /* 代繳人區域預設隱藏 */
+        #payerSection { display: none; background: #fff3cd; padding: 15px; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -69,124 +38,120 @@
                 <input type="text" name="name" class="form-control" required>
             </div>
             <div class="mb-3">
-                <label class="form-label">電子郵件 (將寄送通知信)</label>
+                <label class="form-label">電子郵件 (確認信將寄到這)</label>
                 <input type="email" name="email" class="form-control" required>
             </div>
             <div class="mb-3">
                 <label class="form-label">聯絡電話</label>
                 <input type="tel" name="phone" class="form-control" required>
             </div>
+
+            <!-- 繳費方式 -->
+            <div class="mb-3">
+                <label class="form-label">繳費方式</label>
+                <select name="paymentMethod" id="paymentMethod" class="form-select" onchange="togglePayer(this.value)" required>
+                    <option value="本人親自Linepay繳費給窗口">本人親自Linepay繳費給窗口</option>
+                    <option value="請別人代繳">請別人代繳</option>
+                </select>
+            </div>
+
+            <!-- 代繳人姓名 (隱藏) -->
+            <div id="payerSection">
+                <label class="form-label mt-0">代繳人姓名</label>
+                <input type="text" name="payerName" id="payerName" class="form-control" placeholder="請輸入代繳人姓名">
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">備註</label>
                 <textarea name="note" class="form-control" rows="2"></textarea>
             </div>
 
             <hr class="my-4">
-
-            <label class="form-label">請點選欲報名的課程 (可複選，再次點擊可取消)</label>
+            <label class="form-label">請選取課程 (可複選)</label>
             <div id="courseList">載入中...</div>
 
             <button type="submit" class="btn btn-primary w-100 btn-submit" id="submitBtn">立即完成報名</button>
         </form>
 
-        <div id="responseMsg" class="mt-4 text-center alert alert-success" style="display:none;">✅ 報名成功！請至 Email 查看彙整信件。</div>
+        <div id="responseMsg" class="mt-4 text-center alert alert-success" style="display:none;">✅ 報名成功！已寄出電子郵件。</div>
     </div>
 </div>
 
 <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; 
+    let hasSubmittedOnce = false;
+
+    // 控制代繳人欄位顯示
+    function togglePayer(val) {
+        const section = document.getElementById('payerSection');
+        const input = document.getElementById('payerName');
+        if (val === '請別人代繳') {
+            section.style.display = 'block';
+            input.required = true;
+        } else {
+            section.style.display = 'none';
+            input.required = false;
+            input.value = '';
+        }
+    }
 
     function getImgUrl(url, mode) {
         if (!url) return 'https://via.placeholder.com/100x130';
         const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
         const fileId = match ? match[1] : '';
-        if (fileId) {
-            return mode === 'thumb' 
-                ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400` 
-                : `https://drive.google.com/uc?export=view&id=${fileId}`;
-        }
-        return url;
+        return fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400` : url;
     }
 
     window.onload = function() {
-        fetch(scriptURL)
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById('courseList');
-                list.innerHTML = '';
-                data.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'course-card';
-                    card.dataset.name = item.name; // 儲存課程名稱在標籤裡
-                    
-                    // 點擊切換選取狀態 (Toggle)
-                    card.onclick = function() {
-                        this.classList.toggle('selected');
-                    };
-                    
-                    const thumbImg = getImgUrl(item.dm, 'thumb');
-                    const fullImg = item.dm;
-
-                    card.innerHTML = `
-                        <div class="checkmark-overlay"></div>
-                        <div class="course-img-wrapper">
-                            <img src="${thumbImg}" class="course-img">
-                            <a href="${fullImg}" target="_blank" class="btn-view-img" onclick="event.stopPropagation();">🔍 查看大圖</a>
-                        </div>
-                        <div class="course-info">
-                            <div class="course-name">${item.name}</div>
-                            <div class="course-detail">
-                                📅 ${item.date} (${item.time})<br>
-                                👤 主講：${item.speaker}<br>
-                                <span class="course-fee">💰 費用：NT$ ${item.fee}</span>
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(card);
-                });
+        fetch(scriptURL).then(res => res.json()).then(data => {
+            const list = document.getElementById('courseList');
+            list.innerHTML = '';
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'course-card';
+                card.dataset.name = item.name;
+                card.onclick = function() { this.classList.toggle('selected'); };
+                card.innerHTML = `
+                    <div class="checkmark-overlay"></div>
+                    <div class="course-img-wrapper">
+                        <img src="${getImgUrl(item.dm, 'thumb')}" class="course-img">
+                        <a href="${item.dm}" target="_blank" class="btn-view-img" onclick="event.stopPropagation();">🔍 查看大圖</a>
+                    </div>
+                    <div class="course-info">
+                        <div class="course-name">${item.name}</div>
+                        <div class="course-detail">📅 ${item.date} (${item.time})<br>👤 主講：${item.speaker}<br>
+                        <span class="course-fee">💰 費用：NT$ ${item.fee}</span></div>
+                    </div>`;
+                list.appendChild(card);
             });
+        });
     };
 
     const form = document.getElementById('regForm');
     form.addEventListener('submit', e => {
         e.preventDefault();
+        const selected = Array.from(document.querySelectorAll('.course-card.selected')).map(el => el.dataset.name);
+        if(selected.length === 0) { alert('❌ 請至少選擇一門課程！'); return; }
 
-        // 收集所有被選中的課程
-        const selectedElements = document.querySelectorAll('.course-card.selected');
-        const selectedCourses = Array.from(selectedElements).map(el => el.dataset.name);
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = '處理中...';
 
-        if(selectedCourses.length === 0) {
-            alert('❌ 請至少選擇一門課程！');
-            return;
-        }
-
-        document.getElementById('responseMsg').style.display = 'block';
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('submitBtn').innerText = '處理中...';
-
-        // 整理所有資料
         const formData = new FormData(form);
-        const baseData = Object.fromEntries(formData.entries());
-        
-        // 合併基本資料與課程陣列
-        const finalData = {
-            ...baseData,
-            courses: selectedCourses
-        };
+        const data = { ...Object.fromEntries(formData.entries()), courses: selected };
 
-        // 發送資料 (注意：複選建議用 JSON 格式發送，GAS 端的 doPost 已經支援)
-        fetch(scriptURL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify(finalData),
-            headers: { 'Content-Type': 'application/json' }
-        });
+        fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data)});
 
         setTimeout(() => {
+            document.getElementById('responseMsg').style.display = 'block';
             form.reset();
             document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
-            document.getElementById('submitBtn').disabled = false;
-            document.getElementById('submitBtn').innerText = '立即完成報名';
+            document.getElementById('payerSection').style.display = 'none';
+            
+            // 更換按鈕名稱
+            hasSubmittedOnce = true;
+            btn.innerText = '幫其他人報名';
+            btn.disabled = false;
         }, 1500);
 
         setTimeout(() => { document.getElementById('responseMsg').style.display = 'none'; }, 5000);

@@ -31,7 +31,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">選擇課程</label>
-                    <select name="course" class="form-select" required>
+                    <select id="courseSelect" name="course" class="form-select" required>
                         <option value="">請選擇課程...</option>
                         <option value="Python程式設計">Python 程式設計</option>
                         <option value="數位行銷入門">數位行銷入門</option>
@@ -49,43 +49,64 @@
     </div>
 </div>
 
+<!-- 下拉選單部分 -->
+<div class="mb-3">
+    <label class="form-label">選擇課程</label>
+    <select name="course" id="courseSelect" class="form-select" required>
+        <option value="">正在載入最新課程...</option>
+    </select>
+</div>
+
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; // 👈 這裡貼上你的 Web App URL
+    const courseSelect = document.getElementById('courseSelect');
+
+    // --- 新增：網頁載入時自動抓取課程清單 ---
+    window.onload = function() {
+        fetch(scriptURL) // doGet 會被觸發
+            .then(response => response.json())
+            .then(courses => {
+                // 清空原本的「載入中」選項
+                courseSelect.innerHTML = '<option value="">請選擇課程...</option>';
+                
+                // 將抓到的課程填入下拉選單
+                courses.forEach(course => {
+                    let opt = document.createElement('option');
+                    opt.value = course;
+                    opt.innerHTML = course;
+                    courseSelect.appendChild(opt);
+                });
+            })
+            .catch(error => {
+                courseSelect.innerHTML = '<option value="">載入失敗，請重新整理</option>';
+                console.error('抓取課程錯誤:', error);
+            });
+    };
+
+    // --- 原本的提交功能 (維持不變) ---
     const form = document.getElementById('regForm');
     const btn = document.getElementById('submitBtn');
     const msg = document.getElementById('responseMsg');
 
     form.addEventListener('submit', e => {
         e.preventDefault();
-
-        // --- 核心優化：立即執行 UI 變化 ---
         msg.style.display = 'block';
         msg.className = 'mt-3 text-center alert alert-success';
-        msg.innerText = '報名成功！我們將盡快聯繫您。'; // 讓使用者以為已經好了
-        
+        msg.innerText = '報名成功！我們將盡快聯繫您。';
         btn.disabled = true;
         btn.innerText = '已送出';
 
-        // 取得資料
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-
-        // 清空表單欄位（讓使用者覺得流程已結束）
         form.reset();
 
-        // --- 背景發送資料（不使用 .then 等待回報） ---
         fetch(scriptURL, {
             method: 'POST',
-            mode: 'no-cors', // 使用 no-cors 可以避開繁瑣的跨網域檢查，速度最快
+            mode: 'no-cors',
             body: JSON.stringify(data),
             headers: { 'Content-Type': 'application/json' }
-        })
-        .catch(error => {
-            // 萬一真的失敗，只有在後台 console 報錯，不干擾使用者
-            console.error('背景傳輸錯誤:', error);
         });
     });
 </script>
-
 </body>
 </html>

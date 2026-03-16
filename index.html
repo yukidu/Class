@@ -89,7 +89,6 @@
 </div>
 
 <script>
-    // ⚠️ 請修改此處：貼上你的 Google Apps Script 部署網址
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; 
 
     const form = document.getElementById('regForm');
@@ -97,7 +96,7 @@
     const msg = document.getElementById('responseMsg');
     const courseSelect = document.getElementById('courseSelect');
 
-    // 1. 頁面載入時，立即去抓取「課程清單」
+    // 1. 頁面載入時，抓取「課程清單」
     window.onload = function() {
         fetch(scriptURL)
             .then(res => res.json())
@@ -111,40 +110,42 @@
                 });
             })
             .catch(err => {
-                courseSelect.innerHTML = '<option value="">課程載入失敗，請重新整理頁面</option>';
-                console.error('Fetch error:', err);
+                courseSelect.innerHTML = '<option value="">課程載入失敗，請重新整理</option>';
             });
     };
 
-    // 2. 提交表單（樂觀 UI：按下後立刻完成）
+    // 2. 提交表單（優化版：支援連續報名）
     form.addEventListener('submit', e => {
         e.preventDefault();
 
-        // --- 立即顯示成功畫面 ---
+        // --- 顯示成功回饋 ---
         msg.style.display = 'block';
-        btn.disabled = true;
-        btn.innerText = '處理中...';
+        btn.disabled = true; // 暫時鎖定避免重複點擊
+        btn.innerText = '傳送中...';
 
         // 整理資料
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // 立即重置表單與按鈕狀態，讓使用者感覺瞬間完成
-        setTimeout(() => {
-            form.reset();
-            btn.innerText = '已送出成功';
-        }, 100);
-
-        // --- 在背景默默送出資料到 Google Sheet ---
+        // --- 背景發送資料 ---
         fetch(scriptURL, {
             method: 'POST',
-            mode: 'no-cors', // 避開跨網域等待，增加速度
+            mode: 'no-cors',
             body: JSON.stringify(data),
             headers: { 'Content-Type': 'application/json' }
-        })
-        .catch(error => {
-            console.error('背景傳輸錯誤:', error);
         });
+
+        // --- 關鍵修改：重置機制 ---
+        setTimeout(() => {
+            form.reset(); // 清空欄位
+            btn.innerText = '提交報名'; // 恢復按鈕文字
+            btn.disabled = false; // 恢復按鈕功能，允許第二次報名
+        }, 1500); // 1.5 秒後按鈕恢復
+
+        // 成功訊息顯示 5 秒後自動消失 (選擇性)
+        setTimeout(() => {
+            msg.style.display = 'none';
+        }, 5000);
     });
 </script>
 

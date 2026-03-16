@@ -75,9 +75,19 @@
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; // 👈 貼上你的 GAS 網址
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; 
 
-    // 1. 抓取課程並顯示卡片
+    // 新增一個轉換 Google Drive 連結的函數
+    function fixDriveUrl(url) {
+        if (!url) return 'https://via.placeholder.com/80x110?text=No+DM';
+        // 如果連結包含 drive.google.com/file/d/，就進行轉換
+        if (url.includes('drive.google.com/file/d/')) {
+            const fileId = url.split('/d/')[1].split('/')[0];
+            return `https://drive.google.com/uc?export=view&id=${fileId}`;
+        }
+        return url; // 如果是普通網址就直接回傳
+    }
+
     window.onload = function() {
         fetch(scriptURL)
             .then(res => res.json())
@@ -89,11 +99,11 @@
                     card.className = 'course-card';
                     card.onclick = () => selectCourse(card, item.name);
                     
-                    // 檢查有無圖片，若無顯示預設文字
-                    const imgSrc = item.dm ? item.dm : 'https://via.placeholder.com/80x110?text=No+DM';
+                    // 使用轉換函數處理 A 欄的圖片網址
+                    const imgSrc = fixDriveUrl(item.dm);
 
                     card.innerHTML = `
-                        <img src="${imgSrc}" class="course-img">
+                        <img src="${imgSrc}" class="course-img" onerror="this.src='https://via.placeholder.com/80x110?text=Error'">
                         <div class="course-info">
                             <div class="course-name">${item.name}</div>
                             <div class="course-detail">
@@ -109,42 +119,32 @@
             });
     };
 
-    // 2. 處理卡片點擊選取
     function selectCourse(element, courseName) {
-        // 移除所有卡片的選取狀態
         document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
-        // 幫目前點擊的加色
         element.classList.add('selected');
-        // 更新隱藏欄位的值
         document.getElementById('selectedCourse').value = courseName;
     }
 
-    // 3. 提交表單
     const form = document.getElementById('regForm');
     const btn = document.getElementById('submitBtn');
     const msg = document.getElementById('responseMsg');
 
     form.addEventListener('submit', e => {
         e.preventDefault();
-        
         if(!document.getElementById('selectedCourse').value) {
             alert('請先點選一個課程卡片！');
             return;
         }
-
         msg.style.display = 'block';
         btn.disabled = true;
         btn.innerText = '處理中...';
-
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data)});
-
         setTimeout(() => {
             form.reset();
             document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
-            btn.innerText = '提交報名';
+            btn.innerText = '立即完成報名';
             btn.disabled = false;
         }, 1500);
     });

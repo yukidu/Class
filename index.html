@@ -3,149 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>課程報名表單</title>
-    <!-- 引入 Bootstrap 美化介面 -->
+    <title>課程報名系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f7f6; padding: 40px 0; font-family: "Microsoft JhengHei", sans-serif; }
-        .form-container { 
-            background: white; 
-            padding: 40px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-            max-width: 550px;
-            margin: auto;
-        }
-        h2 { font-weight: bold; color: #333; margin-bottom: 30px; }
-        .form-label { font-weight: 600; color: #555; }
-        .form-control, .form-select {
-            background-color: #f0f4ff;
-            border: none;
-            height: 50px;
-            border-radius: 10px;
-        }
-        textarea.form-control { height: auto; }
-        .btn-submit {
-            background-color: #7d97ff;
-            border: none;
-            height: 50px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
+        body { background-color: #f8f9fa; padding: 20px 0; font-family: "Microsoft JhengHei", sans-serif; }
+        .form-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); max-width: 650px; margin: auto; }
+        
+        /* 課程卡片樣式 */
+        .course-card {
+            display: flex;
+            align-items: center;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
             transition: 0.3s;
+            background: #fff;
         }
-        .btn-submit:hover { background-color: #5b76e6; }
-        .alert-success {
-            background-color: #d1e7dd;
-            border: none;
-            color: #0f5132;
-            border-radius: 10px;
-            font-weight: bold;
-        }
+        .course-card:hover { border-color: #7d97ff; background-color: #f0f4ff; }
+        .course-card.selected { border-color: #4a6cf7; background-color: #eef2ff; box-shadow: 0 0 10px rgba(74,108,247,0.2); }
+        
+        .course-img { width: 80px; height: 110px; object-fit: cover; border-radius: 5px; margin-right: 15px; background: #eee; }
+        .course-info { flex-grow: 1; }
+        .course-name { font-weight: bold; font-size: 1.1rem; color: #333; margin-bottom: 5px; }
+        .course-detail { font-size: 0.9rem; color: #666; line-height: 1.4; }
+        .course-fee { color: #d9534f; font-weight: bold; }
+
+        .form-label { font-weight: bold; margin-top: 10px; }
+        .form-control { background-color: #f0f4ff; border: none; border-radius: 8px; }
+        .btn-submit { background-color: #4a6cf7; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="form-container">
-        <h2 class="text-center">課程報名表單</h2>
+        <h2 class="text-center mb-4">課程報名表單</h2>
         
+        <!-- 課程選擇區域 -->
+        <label class="form-label">選擇課程 (請直接點選卡片)</label>
+        <div id="courseList">載入中...</div>
+        
+        <!-- 報名資訊區域 -->
         <form id="regForm">
+            <!-- 隱藏欄位：儲存選中的課程名稱 -->
+            <input type="hidden" name="course" id="selectedCourse" required>
+
             <div class="mb-3">
                 <label class="form-label">姓名</label>
-                <input type="text" name="name" class="form-control" placeholder="請輸入姓名" required>
+                <input type="text" name="name" class="form-control" required>
             </div>
-
             <div class="mb-3">
                 <label class="form-label">電子郵件</label>
-                <input type="email" name="email" class="form-control" placeholder="example@gmail.com" required>
+                <input type="email" name="email" class="form-control" required>
             </div>
-
             <div class="mb-3">
                 <label class="form-label">聯絡電話</label>
-                <input type="tel" name="phone" class="form-control" placeholder="請輸入手機號碼" required>
+                <input type="tel" name="phone" class="form-control" required>
             </div>
-
-            <div class="mb-3">
-                <label class="form-label">選擇課程</label>
-                <select name="course" id="courseSelect" class="form-select" required>
-                    <option value="">正在載入最新課程清單...</option>
-                </select>
-            </div>
-
             <div class="mb-3">
                 <label class="form-label">備註</label>
-                <textarea name="note" class="form-control" rows="3" placeholder="如有其他需求請註明"></textarea>
+                <textarea name="note" class="form-control" rows="2"></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 btn-submit" id="submitBtn">提交報名</button>
+            <button type="submit" class="btn btn-primary w-100 btn-submit" id="submitBtn">立即完成報名</button>
         </form>
 
-        <!-- 成功訊息（預設隱藏） -->
-        <div id="responseMsg" class="mt-4 text-center alert alert-success" style="display:none;">
-            報名成功！我們將盡快聯繫您。
-        </div>
+        <div id="responseMsg" class="mt-4 text-center alert alert-success" style="display:none;">報名成功！</div>
     </div>
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxY-7nN1VstyU25aZ_9i8v1zBTRJJSWMa3z7HNSExJlBLcninn85MSHKLFeLyDL_lCT/exec'; // 👈 貼上你的 GAS 網址
 
-    const form = document.getElementById('regForm');
-    const btn = document.getElementById('submitBtn');
-    const msg = document.getElementById('responseMsg');
-    const courseSelect = document.getElementById('courseSelect');
-
-    // 1. 頁面載入時，抓取「課程清單」
+    // 1. 抓取課程並顯示卡片
     window.onload = function() {
         fetch(scriptURL)
             .then(res => res.json())
-            .then(courses => {
-                courseSelect.innerHTML = '<option value="">請選擇課程...</option>';
-                courses.forEach(course => {
-                    let opt = document.createElement('option');
-                    opt.value = course;
-                    opt.innerText = course;
-                    courseSelect.appendChild(opt);
+            .then(data => {
+                const list = document.getElementById('courseList');
+                list.innerHTML = '';
+                data.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.onclick = () => selectCourse(card, item.name);
+                    
+                    // 檢查有無圖片，若無顯示預設文字
+                    const imgSrc = item.dm ? item.dm : 'https://via.placeholder.com/80x110?text=No+DM';
+
+                    card.innerHTML = `
+                        <img src="${imgSrc}" class="course-img">
+                        <div class="course-info">
+                            <div class="course-name">${item.name}</div>
+                            <div class="course-detail">
+                                📅 日期：${item.date} <br>
+                                ⏰ 時間：${item.time} <br>
+                                👤 主講：${item.speaker} <br>
+                                <span class="course-fee">💰 費用：NT$ ${item.fee}</span>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(card);
                 });
-            })
-            .catch(err => {
-                courseSelect.innerHTML = '<option value="">課程載入失敗，請重新整理</option>';
             });
     };
 
-    // 2. 提交表單（優化版：支援連續報名）
+    // 2. 處理卡片點擊選取
+    function selectCourse(element, courseName) {
+        // 移除所有卡片的選取狀態
+        document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
+        // 幫目前點擊的加色
+        element.classList.add('selected');
+        // 更新隱藏欄位的值
+        document.getElementById('selectedCourse').value = courseName;
+    }
+
+    // 3. 提交表單
+    const form = document.getElementById('regForm');
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('responseMsg');
+
     form.addEventListener('submit', e => {
         e.preventDefault();
+        
+        if(!document.getElementById('selectedCourse').value) {
+            alert('請先點選一個課程卡片！');
+            return;
+        }
 
-        // --- 顯示成功回饋 ---
         msg.style.display = 'block';
-        btn.disabled = true; // 暫時鎖定避免重複點擊
-        btn.innerText = '傳送中...';
+        btn.disabled = true;
+        btn.innerText = '處理中...';
 
-        // 整理資料
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // --- 背景發送資料 ---
-        fetch(scriptURL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(data),
-            headers: { 'Content-Type': 'application/json' }
-        });
+        fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data)});
 
-        // --- 關鍵修改：重置機制 ---
         setTimeout(() => {
-            form.reset(); // 清空欄位
-            btn.innerText = '提交報名'; // 恢復按鈕文字
-            btn.disabled = false; // 恢復按鈕功能，允許第二次報名
-        }, 1500); // 1.5 秒後按鈕恢復
-
-        // 成功訊息顯示 5 秒後自動消失 (選擇性)
-        setTimeout(() => {
-            msg.style.display = 'none';
-        }, 5000);
+            form.reset();
+            document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
+            btn.innerText = '提交報名';
+            btn.disabled = false;
+        }, 1500);
     });
 </script>
 
